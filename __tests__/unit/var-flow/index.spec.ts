@@ -3,7 +3,17 @@ import {
   createCodeColor,
   createColorMatrix,
   createCodeShapeMatrix,
+  getRangeClassColor,
+  pipeline,
 } from "../../../src/var-flow";
+
+const mixer = (idx: number) => 1;
+const green = "rgb(0, 255, 0)";
+const yellow = "rgb(254, 255, 0)";
+const mid = "rgb(127, 255, 0)";
+const code = `function foo(a, b) {
+  return a + b;
+}`;
 
 describe("var-flow", () => {
   test("mixColor", () => {
@@ -22,9 +32,6 @@ describe("var-flow", () => {
   });
 
   test("getCodeShapeMatrix", () => {
-    const code = `function foo(a, b) {
-  return a + b;
-}`;
     const codeShapeMatrix = createCodeShapeMatrix(code);
     expect(codeShapeMatrix.length).toEqual(3);
     expect(codeShapeMatrix[0].length).toEqual(20);
@@ -33,10 +40,6 @@ describe("var-flow", () => {
   });
 
   test("createCodeColor", () => {
-    const code = `function foo(a, b) {
-  return a + b;
-}`;
-    const green = "rgb(0, 255, 0)";
     const nodeColor = {
       ReturnStatement: green,
     };
@@ -46,40 +49,34 @@ describe("var-flow", () => {
     expect(loc).toStrictEqual({
       start: {
         line: 2,
-        column: 2,
+        column: 3,
       },
       end: {
         line: 2,
-        column: 15,
+        column: 16,
       },
     });
   });
 
   test("createColorMatrix", () => {
-    const code = `function foo(a, b) {
-  return a + b;
-}`;
-    const green = "rgb(0, 255, 0)";
-    const yellow = "rgb(254, 255, 0)";
-    const mid = "rgb(127, 255, 0)";
     /**
      * yellow 区域 rgb(254, 255, 0)
-     * line: 1, column: 19
-     * line: 3, column: 1
+     * line: 1, column: 20
+     * line: 3, column: 2
      *
      * green 区域 rgb(0, 255, 0)
-     * line: 2, column: 2
-     * line: 2, column: 15
+     * line: 2, column: 3
+     * line: 2, column: 16
      *
      * 重叠区域 rgb(127, 255, 0)
-     * line: 2, column: 2
-     * line: 2, column: 15
+     * line: 2, column: 3
+     * line: 2, column: 16
      */
     const nodeColor = {
       BlockStatement: yellow,
       ReturnStatement: green,
     };
-    const mixer = (idx: number) => 1;
+
     const colorMatrix = createColorMatrix(
       code,
       createCodeColor(code, nodeColor),
@@ -87,25 +84,25 @@ describe("var-flow", () => {
     );
     expect(colorMatrix).toStrictEqual([
       [
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
-        "rgb(0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
+        "rgba(0, 0, 0, 0)",
         "rgb(254, 255, 0)",
       ],
       [
@@ -126,6 +123,37 @@ describe("var-flow", () => {
         "rgb(127, 255, 0)",
       ],
       ["rgb(254, 255, 0)"],
+    ]);
+  });
+
+  test("getRangeClassColor", () => {
+    const nodeColor = {
+      BlockStatement: yellow,
+      ReturnStatement: green,
+    };
+    const colorMatrix = createColorMatrix(
+      code,
+      createCodeColor(code, nodeColor),
+      mixer
+    );
+    expect(getRangeClassColor(colorMatrix)).toStrictEqual([
+      { range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
+      { range: [1, 20, 2, 3], color: "rgb(254, 255, 0)" },
+      { range: [2, 3, 2, 16], color: "rgb(127, 255, 0)" },
+      { range: [3, 1, 3, 2], color: "rgb(254, 255, 0)" },
+    ]);
+  });
+
+  test("pipeline", () => {
+    const nodeColor = {
+      BlockStatement: yellow,
+      ReturnStatement: green,
+    };
+    expect(pipeline(code, "average", nodeColor)).toStrictEqual([
+      { range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
+      { range: [1, 20, 2, 3], color: "rgb(254, 255, 0)" },
+      { range: [2, 3, 2, 16], color: "rgb(127, 255, 0)" },
+      { range: [3, 1, 3, 2], color: "rgb(254, 255, 0)" },
     ]);
   });
 });

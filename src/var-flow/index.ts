@@ -3,7 +3,9 @@ import Color from "color";
 import traverse from "@babel/traverse";
 import { colorMap } from "./color-map";
 import { parse } from "@babel/parser";
+import merge from "merge";
 
+import type { AnyObject } from "../types";
 import type { CodeColor, RangeClassColor } from "./types";
 
 type Mixer = (index: number) => number;
@@ -11,7 +13,11 @@ type Mixer = (index: number) => number;
 /**
  * 颜色混合
  */
-export function mixColor(colors: string[], mixer: Mixer): string {
+export function mixColor(
+  colors: string[],
+  mixer: Mixer,
+  backgroundColor: string = "rgba(0, 0, 0, 0)"
+): string {
   const _colors = colors.map((color) => Color(color, "rgb"));
   const sumOfWeights = colors.reduce((acc, color, index) => {
     return acc + mixer(index);
@@ -27,15 +33,18 @@ export function mixColor(colors: string[], mixer: Mixer): string {
     B += b * weight;
   });
 
+  if (!R && !G && !B) {
+    return backgroundColor;
+  }
+
   return Color.rgb(R, G, B).toString();
 }
 
 /**
  * 混色计算
  */
-export const mixer: {
-  [keys: string]: Mixer;
-} = {
+export const MIXER: AnyObject<Mixer> = {
+  average: (index) => 1,
   power: (index: number) => {
     const p = 2;
     return 1 / index ** p;
@@ -70,27 +79,34 @@ export function createCodeShapeMatrix<T>(code: string, initWith?: any) {
   return matrix;
 }
 
+function babelLoc2VSLoc({ line, column }: { line: number; column: number }) {
+  return {
+    line,
+    column: column + 1,
+  };
+}
+
 /**
  * 遍历代码ast，记录不同位置的颜色
  */
 export function createCodeColor(
   code: string,
-  nodeColor: { [key: string]: string } = colorMap.astNode
+  nodeColor: AnyObject = colorMap.astNode
 ) {
   const ast = parse(code);
-
+  const colors = merge(true, colorMap.astNode, nodeColor);
   const codeColor: CodeColor[] = [];
   traverse(ast, {
     enter(path) {
-      const color = _.get(nodeColor, path.node.type, "");
+      const color = _.get(colors, path.node.type, "");
       if (color !== "") {
         const { start, end } = path.node.loc!;
         codeColor.push({
           type: path.node.type,
           color,
           loc: {
-            start: { ...start },
-            end: { ...end },
+            start: babelLoc2VSLoc(start),
+            end: babelLoc2VSLoc(end),
           },
         });
       }
@@ -101,7 +117,6 @@ export function createCodeColor(
 
 /**
  * 创建颜色矩阵
- * 矩阵的大小可能会小于代码的大小，它只记录了需要混色的位置
  */
 export function createColorMatrix(
   code: string,
@@ -125,14 +140,14 @@ export function createColorMatrix(
       while (lineNumber <= el) {
         const column = colorsMatrix[lineNumber - 1].length;
         while (
-          (lineNumber < el && columnNumber < column) ||
+          (lineNumber < el && columnNumber <= column) ||
           (lineNumber === el && columnNumber < ec)
         ) {
-          colorsMatrix[lineNumber - 1][columnNumber].push(color);
+          colorsMatrix[lineNumber - 1][columnNumber - 1].push(color);
           columnNumber++;
         }
         lineNumber++;
-        columnNumber = 0;
+        columnNumber = 1;
       }
     }
   );
@@ -157,24 +172,23 @@ export function getRangeClassColor(colorMatrix: string[][]) {
   let to = [1, 0];
   const rangeClassColor: RangeClassColor[] = [];
 
-  const push = () => {
+  const push = (color: string) => {
     rangeClassColor.push({
       range: [...from, ...to] as [number, number, number, number],
-      className: "",
-      glyphMarginClassName: "",
+      color,
     });
   };
 
   for (let lineNumber = 1; lineNumber <= colorMatrix.length; lineNumber++) {
     const line = colorMatrix[lineNumber - 1];
-    for (let column = 0; column < line.length; column++) {
-      const color = line[column];
+    for (let column = 1; column <= line.length; column++) {
+      const color = line[column - 1];
       if (lastColor === color) {
         // 合并 range
         to = [lineNumber, column + 1];
       } else {
         // 存储上一组颜色
-        lastColor !== "" && push();
+        lastColor !== "" && push(lastColor);
 
         // 记录当前
         from = [lineNumber, column];
@@ -184,7 +198,7 @@ export function getRangeClassColor(colorMatrix: string[][]) {
     }
   }
   // 存储最后一个
-  push();
+  push(lastColor);
   return rangeClassColor;
 }
 
@@ -195,9 +209,13 @@ export function getRangeClassColor(colorMatrix: string[][]) {
  * -> colorMatrix -> rangeClassColor
  * -> rangeClassColor
  */
-export function pipeline(code: string) {
-  const codeColor = createCodeColor(code);
-  const colorMatrix = createColorMatrix(code, codeColor, mixer.power);
+export function pipeline(
+  code: string,
+  mixer: string = "average",
+  nodeColor: AnyObject = {}
+) {
+  const codeColor = createCodeColor(code, nodeColor);
+  const colorMatrix = createColorMatrix(code, codeColor, _.get(MIXER, mixer));
   const rangeClassColor = getRangeClassColor(colorMatrix);
   return rangeClassColor;
 }
