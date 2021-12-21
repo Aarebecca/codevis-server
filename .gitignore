@@ -3,3 +3,5 @@
 .vscode
 package-lock.json
 /logs
+/temp
+/dist
