@@ -16,6 +16,7 @@
     "@types/color": "^3.0.2",
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.13",
+    "@types/express-fileupload": "^1.2.0",
     "@types/jest": "^27.0.3",
     "@types/lodash": "^4.14.178",
     "cross-env": "^7.0.3",
@@ -28,11 +29,14 @@
   "dependencies": {
     "@babel/parser": "^7.16.6",
     "@babel/traverse": "^7.16.5",
+    "@babel/types": "^7.16.0",
     "color": "^4.1.0",
     "cors": "^2.8.5",
     "express": "^4.17.2",
+    "express-fileupload": "^1.2.1",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
-    "merge": "^2.1.1"
+    "merge": "^2.1.1",
+    "prettier": "^2.5.1"
   }
 }

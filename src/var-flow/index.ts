@@ -4,6 +4,7 @@ import traverse from "@babel/traverse";
 import { colorMap } from "./color-map";
 import { parse } from "@babel/parser";
 import merge from "merge";
+import { babelLoc2VSLoc } from "../utils";
 
 import type { AnyObject } from "../types";
 import type { CodeColor, RangeClassColor } from "./types";
@@ -77,13 +78,6 @@ export function createCodeShapeMatrix<T>(code: string, initWith?: any) {
 
   codeLines.forEach((line, lineIndex) => {});
   return matrix;
-}
-
-function babelLoc2VSLoc({ line, column }: { line: number; column: number }) {
-  return {
-    line,
-    column: column + 1,
-  };
 }
 
 /**
