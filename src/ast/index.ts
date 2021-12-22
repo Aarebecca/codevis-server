@@ -19,7 +19,7 @@ import type {
   ExpressionStatement,
 } from "@babel/types";
 
-import type { NodePath } from "babel__traverse";
+import type { NodePath } from "@babel/traverse";
 
 export * from "./drop";
 export * from "./extract";
@@ -177,7 +177,7 @@ export class AST {
       Identifier(path) {
         if (!filterPattern) {
           identifierNodes.push(path);
-        } else if (filterPattern.indexOf(path.node.name) !== -1) {
+        } else if (filterPattern.includes(path.node.name)) {
           identifierNodes.push(path);
         }
       },
