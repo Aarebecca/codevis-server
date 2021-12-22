@@ -112,7 +112,7 @@ app.post("/var-list", (req, res) => {
   }
 });
 
-app.post("/var-flow", (req, res) => {
+app.post("/heat-map", (req, res) => {
   const { code, mixer = "average", nodeColor = "{}" } = req.body;
   if (!code) {
     res.status(400).send("code is required");
