@@ -16,7 +16,7 @@ export function comparer(str: string) {
       return tar === val;
     },
     in(arr: string[]) {
-      return arr.includes(val);
+      return arr.includes(val) || arr.includes(`...${val}`);
     },
   };
 }
