@@ -9,4 +9,5 @@ export type CodeColor = {
 export type RangeClassColor = {
   range: [number, number, number, number];
   color: string;
+  type: string[];
 };

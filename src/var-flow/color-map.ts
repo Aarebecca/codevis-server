@@ -250,5 +250,11 @@ export const colorMap = {
     WhileStatement: "",
     WithStatement: "",
     YieldExpression: "",
+
+    /**
+     * extra
+     */
+    VariableDefinition: "",
+    VariableMention: "",
   },
 };

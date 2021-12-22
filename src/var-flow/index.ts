@@ -4,7 +4,12 @@ import traverse from "@babel/traverse";
 import { colorMap } from "./color-map";
 import { parse } from "@babel/parser";
 import merge from "merge";
-import { babelLoc2VSLoc } from "../utils";
+import {
+  babelLoc2VSLoc,
+  isVariableDefinition,
+  isVariableMention,
+} from "../utils";
+import { AST, extractVariableNamesList } from "../ast";
 
 import type { AnyObject } from "../types";
 import type { CodeColor, RangeClassColor } from "./types";
@@ -83,16 +88,26 @@ export function createCodeShapeMatrix<T>(code: string, initWith?: any) {
 /**
  * 遍历代码ast，记录不同位置的颜色
  */
-export function createCodeColor(
-  code: string,
-  nodeColor: AnyObject = colorMap.astNode
-) {
+export function createCodeColor(code: string, nodeColor: AnyObject = {}) {
   const ast = parse(code);
   const colors = merge(true, colorMap.astNode, nodeColor);
   const codeColor: CodeColor[] = [];
+  const varList = extractVariableNamesList(new AST(code).functions[0]);
   traverse(ast, {
     enter(path) {
-      const color = _.get(colors, path.node.type, "");
+      let nodeType = path.node.type as string;
+      /**
+       * 识别出变量定义
+       */
+      if (isVariableDefinition(path, varList)) {
+        nodeType = "VariableDefinition";
+      }
+
+      if (isVariableMention(path, varList)) {
+        nodeType = "VariableMention";
+      }
+
+      const color = _.get(colors, nodeType, "");
       if (color !== "") {
         const { start, end } = path.node.loc!;
         codeColor.push({
@@ -116,9 +131,17 @@ export function createColorMatrix(
   code: string,
   codeColor: CodeColor[],
   mixer: Mixer
-) {
+): [string[][], string[][][]] {
   // 初始化矩阵
+  /**
+   * 每个位置的颜色
+   */
   const colorsMatrix = createCodeShapeMatrix<string[]>(code, () => []);
+  /**
+   * 每个位置所属于的类型，范围从大到小
+   */
+  const typeMatrix = createCodeShapeMatrix<string[]>(code, () => []);
+
   // 填充矩阵
   codeColor.forEach(
     ({
@@ -138,6 +161,7 @@ export function createColorMatrix(
           (lineNumber === el && columnNumber < ec)
         ) {
           colorsMatrix[lineNumber - 1][columnNumber - 1].push(color);
+          typeMatrix[lineNumber - 1][columnNumber - 1].push(type);
           columnNumber++;
         }
         lineNumber++;
@@ -152,7 +176,7 @@ export function createColorMatrix(
     });
   });
 
-  return mixMatrix;
+  return [mixMatrix, typeMatrix];
 }
 
 /**
@@ -160,14 +184,19 @@ export function createColorMatrix(
  * 获得 editor 中每个 range 中上的颜色
  * 如果相邻的 range 中有相同的颜色，则合并 range
  */
-export function getRangeClassColor(colorMatrix: string[][]) {
+export function getRangeClassColor(
+  colorMatrix: string[][],
+  typeMatrix: string[][][]
+) {
   let lastColor = "";
+  let lastType: string[] = [];
   let from = [1, 0];
   let to = [1, 0];
   const rangeClassColor: RangeClassColor[] = [];
 
-  const push = (color: string) => {
+  const push = (color: string, t: string[]) => {
     rangeClassColor.push({
+      type: t,
       range: [...from, ...to] as [number, number, number, number],
       color,
     });
@@ -177,22 +206,24 @@ export function getRangeClassColor(colorMatrix: string[][]) {
     const line = colorMatrix[lineNumber - 1];
     for (let column = 1; column <= line.length; column++) {
       const color = line[column - 1];
+      const t = typeMatrix[lineNumber - 1][column - 1];
       if (lastColor === color) {
         // 合并 range
         to = [lineNumber, column + 1];
       } else {
         // 存储上一组颜色
-        lastColor !== "" && push(lastColor);
+        lastColor !== "" && push(lastColor, lastType);
 
         // 记录当前
         from = [lineNumber, column];
         to = [lineNumber, column + 1];
       }
       lastColor = color;
+      lastType = t;
     }
   }
   // 存储最后一个
-  push(lastColor);
+  push(lastColor, lastType);
   return rangeClassColor;
 }
 
@@ -209,7 +240,11 @@ export function pipeline(
   nodeColor: AnyObject = {}
 ) {
   const codeColor = createCodeColor(code, nodeColor);
-  const colorMatrix = createColorMatrix(code, codeColor, _.get(MIXER, mixer));
-  const rangeClassColor = getRangeClassColor(colorMatrix);
+  const [colorMatrix, typeMatrix] = createColorMatrix(
+    code,
+    codeColor,
+    _.get(MIXER, mixer)
+  );
+  const rangeClassColor = getRangeClassColor(colorMatrix, typeMatrix);
   return rangeClassColor;
 }

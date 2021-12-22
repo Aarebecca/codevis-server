@@ -77,7 +77,7 @@ describe("var-flow", () => {
       ReturnStatement: green,
     };
 
-    const colorMatrix = createColorMatrix(
+    const [colorMatrix, typeMatrix] = createColorMatrix(
       code,
       createCodeColor(code, nodeColor),
       mixer
@@ -124,6 +124,48 @@ describe("var-flow", () => {
       ],
       ["rgb(254, 255, 0)"],
     ]);
+    expect(typeMatrix).toStrictEqual([
+      [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        ["BlockStatement"],
+      ],
+      [
+        ["BlockStatement"],
+        ["BlockStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+        ["BlockStatement", "ReturnStatement"],
+      ],
+      [["BlockStatement"]],
+    ]);
   });
 
   test("getRangeClassColor", () => {
@@ -131,16 +173,28 @@ describe("var-flow", () => {
       BlockStatement: yellow,
       ReturnStatement: green,
     };
-    const colorMatrix = createColorMatrix(
+    const [colorMatrix, typeMatrix] = createColorMatrix(
       code,
       createCodeColor(code, nodeColor),
       mixer
     );
-    expect(getRangeClassColor(colorMatrix)).toStrictEqual([
-      { range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
-      { range: [1, 20, 2, 3], color: "rgb(254, 255, 0)" },
-      { range: [2, 3, 2, 16], color: "rgb(127, 255, 0)" },
-      { range: [3, 1, 3, 2], color: "rgb(254, 255, 0)" },
+    expect(getRangeClassColor(colorMatrix, typeMatrix)).toStrictEqual([
+      { type: [], range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
+      {
+        type: ["BlockStatement"],
+        range: [1, 20, 2, 3],
+        color: "rgb(254, 255, 0)",
+      },
+      {
+        type: ["BlockStatement", "ReturnStatement"],
+        range: [2, 3, 2, 16],
+        color: "rgb(127, 255, 0)",
+      },
+      {
+        type: ["BlockStatement"],
+        range: [3, 1, 3, 2],
+        color: "rgb(254, 255, 0)",
+      },
     ]);
   });
 
@@ -150,10 +204,22 @@ describe("var-flow", () => {
       ReturnStatement: green,
     };
     expect(pipeline(code, "average", nodeColor)).toStrictEqual([
-      { range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
-      { range: [1, 20, 2, 3], color: "rgb(254, 255, 0)" },
-      { range: [2, 3, 2, 16], color: "rgb(127, 255, 0)" },
-      { range: [3, 1, 3, 2], color: "rgb(254, 255, 0)" },
+      { type: [], range: [1, 1, 1, 20], color: "rgba(0, 0, 0, 0)" },
+      {
+        type: ["BlockStatement"],
+        range: [1, 20, 2, 3],
+        color: "rgb(254, 255, 0)",
+      },
+      {
+        type: ["BlockStatement", "ReturnStatement"],
+        range: [2, 3, 2, 16],
+        color: "rgb(127, 255, 0)",
+      },
+      {
+        type: ["BlockStatement"],
+        range: [3, 1, 3, 2],
+        color: "rgb(254, 255, 0)",
+      },
     ]);
   });
 });
