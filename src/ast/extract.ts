@@ -58,7 +58,7 @@ export function extractVariableNamesList(f: FunctionNode): string[] {
       keys(n).forEach((key: string) => {
         const val = n[key];
         if (isString(val)) {
-          val === "Identifier" && list.push(key);
+          ["Identifier", "Assignment"].indexOf(val) > -1 && list.push(key);
           val === "RestElement" && list.push(`...${key}`);
         } else {
           parse(val as AnyObject<Object>);
@@ -207,6 +207,7 @@ export function extractIdentifierRestElementPattern(pattern: LVal): any {
           `...${(node.argument as Identifier).name}`
         );
       } else {
+        // assignmentPattern
         node;
         set(result, [...path, index], (node.left as Identifier).name);
       }

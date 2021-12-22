@@ -112,11 +112,37 @@ describe("Extract", () => {
       "l",
       "...rest2",
     ]);
-    // console.log(
-    //   extractArgumentNamesList(
-    //     new AST(`function f(f,n,c,i,o,t,u){}`).functions[0]
-    //   )
-    // );
+
+    expect(
+      extractVariableNamesList(
+        new AST(`function f(node) {
+      const list = [node];
+      const a = 1;
+      const [b, , h=2, [j],...c] = o;
+      const {d, e, g=1, k:{z},...f} = k2;
+      let [path, ...rest] = node.parentPath;
+      while (path) {
+        list.unshift(path);
+        path = path.parentPath;
+      }
+      return list;
+    }`).functions[0]
+      )
+    ).toStrictEqual([
+      "list",
+      "a",
+      "b",
+      "h",
+      "j",
+      "...c",
+      "d",
+      "e",
+      "g",
+      "z",
+      "...f",
+      "path",
+      "...rest",
+    ]);
   });
 
   it("extractArgumentNames", () => {
