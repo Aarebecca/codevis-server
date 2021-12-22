@@ -83,10 +83,10 @@ describe("ast", () => {
 
   it("functions3", () => {
     ast = new AST(`
-    function(o, m, k, k2) {
+    (function(o, m, k, k2) {
       if (k2 === undefined) k2 = k;
       o[k2] = m[k];
-    }`);
+    })()`);
     const { functions } = ast;
     expect(functions.length).toBe(1);
   });
