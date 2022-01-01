@@ -1,4 +1,4 @@
-import traverse from "@babel/traverse";
+import traverse, { NodePath } from "@babel/traverse";
 import { isArray, isNull, isObject, isString, keys, set } from "lodash";
 import { comparer, babelLoc2VSLoc } from "../utils";
 /**
@@ -84,11 +84,40 @@ type VarWithLoc = {
 export function extractVariableNamesWithLoc(f: FunctionNode): VarWithLoc[] {
   const varList = extractVariableNamesList(f);
   const varWithLoc: VarWithLoc[] = [];
+
+  /**
+   * 1. 使用 Object 解构赋值的变量时，会有两个变量，即key和value
+   * 例如
+   * const {
+   *  a,
+   *  b = 1,
+   *  c: {
+   *    d
+   *  },
+   *  ...e
+   * } = f;
+   * 中 a
+   * 2. Object 结构时具有默认值的变量
+   */
+  const isDuplicateIdentifier = (nodePath: NodePath): boolean => {
+    const { node } = nodePath;
+    if (
+      "range" in node &&
+      "extra" in node &&
+      node.range === undefined &&
+      node.extra === undefined
+    ) {
+      return true;
+    }
+    return false;
+  };
+
   traverse(f, {
     noScope: true,
-    Identifier({ node }) {
+    Identifier(path) {
+      const { node } = path;
       const cpr = comparer(node.name);
-      if (cpr.in(varList)) {
+      if (cpr.in(varList) && !isDuplicateIdentifier(path)) {
         const loc = node.loc as SourceLocation;
         const { line: sl, column: sc } = babelLoc2VSLoc(loc.start);
         const { line: el, column: ec } = babelLoc2VSLoc(loc.end);

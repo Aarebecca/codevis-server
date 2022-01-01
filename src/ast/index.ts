@@ -136,7 +136,8 @@ export class AST {
     /**
      * 命名使用驼峰法
      */
-    const { availableFunctions: functions } = this;
+    // const { availableFunctions: functions } = this;
+    const { functions } = this;
     return functions.map((func) => {
       const list = [
         ...extractArgumentNamesList(func),
