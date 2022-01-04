@@ -99,7 +99,7 @@ app.post("/var-list", (req, res) => {
       status: CONSTANTS.success,
       data: {
         varList: extractVariableNamesList(f),
-        locList: extractVariableNamesWithLoc(f),
+        locList: extractVariableNamesWithLoc(f, true),
       },
     });
   } catch (e) {

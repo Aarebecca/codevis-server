@@ -6,6 +6,7 @@ import {
   extractVariableNamesList,
   extractArgumentNames,
   extractArgumentNamesList,
+  extractVariableNamesWithLoc,
 } from "../../../src/ast/extract";
 import { AST } from "../../../src/ast";
 
@@ -175,5 +176,46 @@ describe("Extract", () => {
       "...rest1",
       "...rest2",
     ]);
+  });
+
+  it("extractVariableNamesWithLoc", () => {
+    const code = `function f(node) {
+      const list = [node];
+      const a = 1;
+      const [b, , h=2, [j],...c] = o;
+      const {d, e, g=1, k:{z},...f} = k2;
+      let [path, ...rest] = node.parentPath;
+      let [pa, ...re] = path;
+      while (path) {
+        list.unshift(path);
+        path = path.parentPath;
+      }
+      return list;
+    }`;
+    const ast = new AST(code);
+    const { normalizeIdentifierFunctions } = ast;
+    const f = normalizeIdentifierFunctions[0];
+    console.log(AST.generate(ast.functions[0], {}, false));
+    const locList = extractVariableNamesWithLoc(f);
+    const res = {
+      list: 2,
+      a: 3,
+      b: 4,
+      h: 4,
+      j: 4,
+      c: 4,
+      d: 5,
+      e: 5,
+      g: 5,
+      z: 5,
+      f: 5,
+      path: 6,
+      rest: 6,
+      pa: 7,
+      re: 7,
+    } as const;
+    // locList.forEach(({ name, loc: [line1] }) => {
+    //   expect(res[name as keyof typeof res]).toBe(line1);
+    // });
   });
 });

@@ -77,13 +77,10 @@ export function extractVariableNamesList(f: FunctionNode): string[] {
   return list;
 }
 
-type VarWithLoc = {
-  name: string;
-  loc: [number, number, number, number];
-};
-export function extractVariableNamesWithLoc(f: FunctionNode): VarWithLoc[] {
+type VarWithLoc = [number, number, number, number];
+export function extractVariableNamesWithLoc(f: FunctionNode, sort = false) {
   const varList = extractVariableNamesList(f);
-  const varWithLoc: VarWithLoc[] = [];
+  const varWithLoc: { [keys: string]: VarWithLoc[] } = {};
 
   /**
    * 1. 使用 Object 解构赋值的变量时，会有两个变量，即key和value
@@ -121,13 +118,27 @@ export function extractVariableNamesWithLoc(f: FunctionNode): VarWithLoc[] {
         const loc = node.loc as SourceLocation;
         const { line: sl, column: sc } = babelLoc2VSLoc(loc.start);
         const { line: el, column: ec } = babelLoc2VSLoc(loc.end);
-        varWithLoc.push({
-          name: cpr.val,
-          loc: [sl, sc, el, ec],
-        });
+        if (!(cpr.val in varWithLoc)) {
+          varWithLoc[cpr.val] = [];
+        }
+        varWithLoc[cpr.val].push([sl, sc, el, ec]);
       }
     },
   });
+
+  // 对每个变量进行排序
+  // 从上往下，从右往左
+  // 这里取开始的位置（暂不考虑跨行）
+  if (sort) {
+    keys(varWithLoc).forEach((key) => {
+      varWithLoc[key].sort((a, b) => {
+        if (a[0] === b[0]) {
+          return b[1] - a[1];
+        }
+        return a[0] - b[0];
+      });
+    });
+  }
 
   return varWithLoc;
 }
