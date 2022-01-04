@@ -48,5 +48,5 @@ export function hasVariable(f: FunctionNode): boolean {
  * 方法是否可用
  */
 export function isFunctionAvailable(f: FunctionNode): boolean {
-  return !isConfounding(f);
+  return hasVariable(f);
 }
