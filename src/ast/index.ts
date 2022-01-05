@@ -144,7 +144,7 @@ export class AST {
         ...extractVariableNamesList(func),
       ];
 
-      const f = AST.parse(AST.generate(func));
+      const f = AST.parse(AST.generate(func, {}, true));
       traverse(f, {
         Identifier(path) {
           const { node } = path;
