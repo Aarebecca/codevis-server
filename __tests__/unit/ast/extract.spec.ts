@@ -179,7 +179,7 @@ describe("Extract", () => {
   });
 
   it("extractVariableNamesWithLoc", () => {
-    const code = `function f(node) {
+    let code = `function f(node) {
       const list = [node];
       const a = 1;
       const [b, , h=2, [j],...c] = o;
@@ -195,7 +195,7 @@ describe("Extract", () => {
     const ast = new AST(code);
     const { normalizeIdentifierFunctions } = ast;
     const f = normalizeIdentifierFunctions[0];
-    console.log(AST.generate(ast.functions[0], {}, false));
+    // console.log(AST.generate(ast.functions[0], {}, false));
     const locList = extractVariableNamesWithLoc(f);
     const res = {
       list: 2,
@@ -217,5 +217,20 @@ describe("Extract", () => {
     // locList.forEach(({ name, loc: [line1] }) => {
     //   expect(res[name as keyof typeof res]).toBe(line1);
     // });
+  });
+
+  it("extractVariableNamesWithLoc2", () => {
+    const code = `function f(m, exports) {
+      for (var p in m)
+        if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p))
+          __createBinding(exports, m, p);
+    }
+    `;
+    const ast = new AST(code);
+    const { normalizeIdentifierFunctions } = ast;
+    const f = normalizeIdentifierFunctions[0];
+    const locList = extractVariableNamesWithLoc(f);
+    console.log(AST.generate(f, {}));
+    console.log(locList);
   });
 });

@@ -1,40 +1,33 @@
-import { camelCase, isString } from "lodash";
-import generate from "@babel/generator";
-import traverse from "@babel/traverse";
-import { comparer } from "../utils/comparer";
-import { extractArgumentNamesList, extractVariableNamesList } from "./extract";
-import { isFunctionAvailable } from "./drop";
-import { parse } from "@babel/parser";
-import prettier from "prettier";
-import * as t from "@babel/types";
+import * as t from '@babel/types';
+import generate from '@babel/generator';
+import prettier from 'prettier';
+import traverse from '@babel/traverse';
+import { camelCase, isString } from 'lodash';
+import { comparer } from '../utils/comparer';
+import { extractArgumentNamesList, extractVariableNamesList } from './extract';
+import { isFunctionAvailable } from './drop';
+import { parse } from '@babel/parser';
 /** G
  * 抽象语法树 ast 的解析及函数定义提取
  */
-import type { Tree, FunctionNode } from "../types";
+import type { FunctionNode } from "../types";
 import type {
-  File as AST_TYPE,
+  File,
   StringLiteral,
   Node,
   FunctionExpression,
   ExpressionStatement,
 } from "@babel/types";
 
-import type { NodePath } from "@babel/traverse";
 
 export * from "./drop";
 export * from "./extract";
 
-interface IdentifierTree extends Tree {
-  node?: NodePath;
-  parent?: IdentifierTree;
-  children: IdentifierTree[];
-}
-
 export class AST {
   public raw: string;
-  public ast!: AST_TYPE;
+  public ast!: File;
 
-  constructor(code: string | AST_TYPE) {
+  constructor(code: string | File) {
     this.raw = isString(code) ? code : AST.generate(code);
     this.reload(code);
   }
@@ -42,7 +35,7 @@ export class AST {
   /**
    * 解析代码为 ast
    */
-  public static parse(code: string): AST_TYPE {
+  public static parse(code: string): File {
     try {
       return parse(code);
     } catch (es) {
@@ -123,7 +116,7 @@ export class AST {
   }
 
   /**
-   * 获得可用的function
+   * 获得可用的function (是否具有变量)
    */
   public get availableFunctions() {
     return this.functions.filter(isFunctionAvailable);
@@ -160,74 +153,9 @@ export class AST {
   }
 
   /**
-   * 将抽象语法树转化为与 Identifier 相关的tree
-   */
-  public identifierTree(filter?: string | []): IdentifierTree {
-    const ast = AST.parse(this.raw);
-    /**
-     * identifier 节点
-     */
-    const filterPattern = filter
-      ? isString(filter)
-        ? [filter]
-        : filter
-      : undefined;
-
-    const identifierNodes: NodePath[] = [];
-    traverse(ast, {
-      Identifier(path) {
-        if (!filterPattern) {
-          identifierNodes.push(path);
-        } else if (filterPattern.includes(path.node.name)) {
-          identifierNodes.push(path);
-        }
-      },
-    });
-
-    const nodesList = Array.from(identifierNodes, function (node) {
-      const list = [node];
-      let path = node.parentPath;
-      while (path) {
-        list.unshift(path);
-        path = path.parentPath;
-      }
-
-      return list;
-    });
-
-    const tree: IdentifierTree = {
-      children: [],
-    };
-
-    nodesList.forEach((node) => {
-      let currNode = tree;
-      let children = tree.children;
-      node.forEach((path) => {
-        const idx = children.findIndex(({ node }) => {
-          return node === path;
-        });
-        if (idx === -1) {
-          const newPath: IdentifierTree = {
-            node: path,
-            parent: currNode,
-            children: [],
-          };
-          children.push(newPath);
-          currNode = newPath;
-        } else {
-          currNode = children[idx];
-        }
-        children = currNode.children;
-      });
-    });
-
-    return tree;
-  }
-
-  /**
    * 重新载入 this.ast
    */
-  private reload(code: string | AST_TYPE) {
+  private reload(code: string | File) {
     this.ast = typeof code === "string" ? AST.parse(code) : code;
   }
 }

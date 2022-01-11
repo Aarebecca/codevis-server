@@ -110,10 +110,10 @@ describe("ast", () => {
     }
     `);
     const { availableFunctions } = ast;
-    expect(availableFunctions.length).toBe(2);
+    expect(availableFunctions.length).toBe(3);
     const [f0, f1] = availableFunctions;
     expect(((f0 as FunctionDeclaration).id as Identifier).name).toBe("valid");
-    expect(((f1 as FunctionDeclaration).id as Identifier).name).toBe("valid_c");
+    expect(((f1 as FunctionDeclaration).id as Identifier).name).toBe("b");
   });
 
   it("availableFunctions2", () => {
@@ -140,18 +140,20 @@ describe("ast", () => {
     }
     const d = new Function('param', 'let [, bob=1,...rest] = obj;')
     `);
-    expect(availableFunctions.length).toBe(3);
-    const [f0, f1, f2] = availableFunctions as [
+    expect(availableFunctions.length).toBe(5);
+    const [f0, , , f3, f4] = availableFunctions as [
+      FunctionDeclaration,
+      FunctionDeclaration,
       FunctionDeclaration,
       ArrowFunctionExpression,
       FunctionExpression
     ];
 
     expect(f0.type).toBe("FunctionDeclaration");
-    expect(f0.id!.name).toBe("aaron");
+    expect(f0.id!.name).toBe("a");
 
-    expect(f1.type).toBe("ArrowFunctionExpression");
-    expect(f2.type).toBe("FunctionExpression");
+    expect(f3.type).toBe("ArrowFunctionExpression");
+    expect(f4.type).toBe("FunctionExpression");
   });
 
   it("normalizeIdentifierFunctions", () => {
@@ -167,19 +169,19 @@ describe("ast", () => {
       }
     `);
     const {
-      normalizeIdentifierFunctions: [f0],
+      normalizeIdentifierFunctions: [f0, f1],
     } = ast;
 
-    const af0 = extractArgumentNamesList(f0);
-    const vf0 = extractVariableNamesList(f0);
+    const af1 = extractArgumentNamesList(f1);
+    const vf1 = extractVariableNamesList(f1);
 
-    expect(af0).toStrictEqual(["paraMeter"]);
-    expect(vf0).toStrictEqual([
+    expect(af1).toStrictEqual(["paraMeter"]);
+    expect(vf1).toStrictEqual([
       "variableName1",
       "variableName2",
       "variableName3",
     ]);
-    expect(AST.generate(f0)).toBe(
+    expect(AST.generate(f1)).toBe(
       `function f1(paraMeter = 1) {
   let variableName1 = 1;
   const variableName2 = 2;
@@ -187,13 +189,5 @@ describe("ast", () => {
   return variableName3;
 }`
     );
-  });
-
-  it("ast2tree", () => {
-    ast = new AST(`
-      function f(a, b, c) { let d = a + b + c; return d; }
-    `);
-    // console.log(ast.identifierTree());
-    // console.log(ast.identifierTree("a"));
   });
 });
