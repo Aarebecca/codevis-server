@@ -7,7 +7,7 @@
     "start": "nodemon",
     "build": "tsc",
     "test": "jest",
-    "test-live": "cross-env DEBUG_MODE=1 jest --watch ./__tests__/unit/"
+    "test-live": "cross-env DEBUG_MODE=1 jest --watch ./__tests__/unit/lifecycle"
   },
   "keywords": [],
   "author": "",

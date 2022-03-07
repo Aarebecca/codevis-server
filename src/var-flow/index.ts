@@ -1,5 +1,4 @@
 import _ from "lodash";
-import Color from "color";
 import traverse from "@babel/traverse";
 import { colorMap } from "./color-map";
 import { parse } from "@babel/parser";
@@ -8,60 +7,14 @@ import {
   babelLoc2VSLoc,
   isVariableDefinition,
   isVariableMention,
+  mixColor,
+  MIXER,
 } from "../utils";
 import { AST, extractVariableNamesList } from "../ast";
 
+import type { Mixer } from "../utils";
 import type { AnyObject } from "../types";
 import type { CodeColor, RangeClassColor } from "./types";
-
-type Mixer = (index: number) => number;
-
-/**
- * 颜色混合
- */
-export function mixColor(
-  colors: string[],
-  mixer: Mixer,
-  backgroundColor: string = "rgba(0, 0, 0, 0)"
-): string {
-  const _colors = colors.map((color) => Color(color, "rgb"));
-  const sumOfWeights = colors.reduce((acc, color, index) => {
-    return acc + mixer(index);
-  }, 0);
-
-  let [R, G, B] = [0, 0, 0];
-
-  _colors.forEach((color, index) => {
-    const [r, g, b] = color.rgb().array();
-    const weight = mixer(index) / sumOfWeights;
-    R += r * weight;
-    G += g * weight;
-    B += b * weight;
-  });
-
-  if (!R && !G && !B) {
-    return backgroundColor;
-  }
-
-  return Color.rgb(R, G, B).toString();
-}
-
-/**
- * 混色计算
- */
-export const MIXER: AnyObject<Mixer> = {
-  average: (index) => 1,
-  power: (index: number) => {
-    const p = 2;
-    return 1 / index ** p;
-  },
-  geometric: (index: number) => {
-    return 1 / 2 ** index;
-  },
-  harmonic: (index: number) => {
-    return 1 / index;
-  },
-};
 
 /**
  * 创建代码对应的“矩阵”

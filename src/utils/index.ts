@@ -3,3 +3,4 @@ export * from "./comparer";
 export * from "./is-variable-definition";
 export * from "./is-variable-mention";
 export * from "./is-duplicate-identifier";
+export * from "./mix-color";

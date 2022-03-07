@@ -2,6 +2,8 @@ import type {
   FunctionDeclaration,
   FunctionExpression,
   ArrowFunctionExpression,
+  SourceLocation,
+  Node,
 } from "@babel/types";
 
 export type FunctionNode =
@@ -16,4 +18,8 @@ export type AnyObject<T = string> = {
 export type Tree = {
   children: Tree[];
   [key: string]: any;
+};
+
+export type LocNode = Node & {
+  loc: SourceLocation;
 };

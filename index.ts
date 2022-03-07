@@ -8,6 +8,8 @@ import {
   extractVariableNamesWithLoc,
   initLogger,
   varFlowPipeline,
+  lifeCycleData,
+  phenogram,
 } from "./src";
 import { config } from "./express.config";
 
@@ -113,6 +115,7 @@ app.post("/var-list", (req, res) => {
 });
 
 app.post("/heat-map", (req, res) => {
+  // TODO 确认下这里 nodeColor 的值
   const { code, mixer = "average", nodeColor = "{}" } = req.body;
   if (!code) {
     res.status(400).send("code is required");
@@ -130,6 +133,102 @@ app.post("/heat-map", (req, res) => {
       status: CONSTANTS.error,
       message: "解析失败",
     });
+  }
+});
+
+/**
+ * 生成代码的变量流图数据
+ */
+app.post("/lifecycle-data", (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    res.status(400).send("code is required");
+    return;
+  }
+  try {
+    res.send({
+      status: CONSTANTS.success,
+      data: lifeCycleData(code),
+    });
+  } catch (e) {
+    // log
+    logger.error(`lifecycle-data: ${e}`);
+    res.send({
+      status: CONSTANTS.error,
+      message: "解析失败",
+    });
+  }
+});
+
+/**
+ * 生成代码的表征图数据
+ * @param code 代码
+ * @param sample 是否采样
+ * @param line 采样行数
+ * @param column 采样列数
+ */
+app.post("/phenogram", (req, res) => {
+  const { code, sample = false, line, column } = req.body;
+  if (!code) {
+    res.status(400).send("code is required");
+    return;
+  }
+  try {
+    res.send({
+      status: CONSTANTS.success,
+      data: phenogram(code, sample, [line, column]),
+    });
+  } catch (e) {
+    // log
+    logger.error(`phenogram: ${e}`);
+    res.send({
+      status: CONSTANTS.error,
+      message: "解析失败",
+    });
+  }
+});
+
+/**
+ * 生成多个代码的表征图数据
+ * @param code 代码
+ * @param sample 是否采样
+ * @param line 采样行数
+ * @param column 采样列数
+ */
+app.post("/multi-phenogram", (req, res) => {
+  const { codes, sample = false, line, column } = req.body;
+  if (!codes) {
+    res.status(400).send("code is required");
+    return;
+  }
+  try {
+    res.send({
+      status: CONSTANTS.success,
+      data: JSON.parse(codes).map((code: string) =>
+        phenogram(code, sample, [line, column])
+      ),
+    });
+  } catch (e) {
+    // log
+    logger.error(`phenogram: ${e}`);
+    res.send({
+      status: CONSTANTS.error,
+      message: "解析失败",
+    });
+  }
+});
+
+/**
+ * 查询相似代码
+ * @param code 代码
+ * @param debug 调试模式，使用样本数据
+ */
+app.post("/similar-code", (req, res) => {
+  const { code, debug } = req.body;
+  if (debug) {
+    const debugData = {
+      "1": [],
+    };
   }
 });
 

@@ -1,11 +1,11 @@
 import {
-  mixColor,
   createCodeColor,
   createColorMatrix,
   createCodeShapeMatrix,
   getRangeClassColor,
   pipeline,
 } from "../../../src/var-flow";
+import { mixColor } from "../../../src/utils";
 
 const mixer = (idx: number) => 1;
 const green = "rgb(0, 255, 0)";
